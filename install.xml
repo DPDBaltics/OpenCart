@@ -1,0 +1,1920 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+    <code>DPD IC</code>
+    <name>DPD IC mod</name>
+    <version>1.1</version>
+    <author>Deivydas Jurčiukonis</author>
+    <link>https://www.eshoprent.com</link>
+
+    <!--Module version start-->
+    <file path="admin/view/template/extension/module/dpd_settings.twig">
+        <operation>
+            <search><![CDATA[<div class="tab-pane active" id="tab-general">]]></search>
+            <add position="after"><![CDATA[{# DPD IC mod start #}
+                <div class="form-group">
+					<label class="col-sm-2 control-label">{{ text_dpd_setting_module_version }}</label>
+					<div class="col-sm-10">
+					<label class="control-label">{{ MODULE_DPD_SETTINGS_VERSION }}</label>
+					</div>
+				  </div>
+                {# DPD IC mod end #}]]></add>
+        </operation>
+    </file>
+
+    <file path="admin/model/extension/shipping/dpdlivehandler.php">
+        <operation>
+            <search><![CDATA['order_number' => $order_id . '#' . $this->config->get('config_invoice_prefix'),]]></search>
+            <add position="after"><![CDATA[// DPD IC mod start
+                'order_number3' => 'OC' . VERSION . ';' . $this->config->get('dpd_setting_module_version'),
+                // DPD IC mod end]]></add>
+        </operation>
+    </file>
+
+
+    <file path="admin/language/en-gb/extension/module/dpd_settings.php">
+        <operation>
+            <search><![CDATA[$_['error_recipient_pickup_country'] = 'Field is required!';]]></search>
+            <add position="after"><![CDATA[// DPD IC mod start
+                $_['text_dpd_setting_module_version'] = 'Module version:';
+                // DPD IC mod end]]></add>
+        </operation>
+    </file>
+    <!--Module version end-->
+
+    <file path="admin/controller/common/dashboard.php">
+        <operation>
+            <search>
+                <![CDATA[
+                $data['footer'] = $this->load->controller('common/footer');
+                ]]>
+            </search>
+
+            <add position="after">
+                <![CDATA[
+                    // Dpd auto terminals list update
+                    $this->load->model('extension/shipping/dpdlivehandler');
+                    $status = $this->model_extension_shipping_dpdlivehandler->updateTerminalList();
+
+                    if (isset($status) && $status) {
+                        $data['error_dpd_login'] = 'DPD Error: ' . $status;
+                    } else {
+                        $data['error_dpd_login'] = '';
+                    }
+                ]]>
+            </add>
+        </operation>
+    </file>
+
+    <file path="admin/controller/sale/order.php">
+        <operation>
+            <search index="0"><![CDATA[$data['shipping_method'] = $order_info['shipping_method'];]]></search>
+            <add position="after">
+                <![CDATA[//DPD IC mod start
+                $data['shipping_parcel_id'] = $order_info['shipping_parcel_id'];
+                //DPD IC mod end]]>
+            </add>
+        </operation>
+
+
+        <operation>
+            <search>
+                <![CDATA[
+    protected function getList()
+                ]]>
+            </search>
+
+            <!-- <add position="after" offset="1"> -->
+            <add position="after">
+                <![CDATA[
+                    $this->load->model('extension/shipping/dpdlivehandler');
+
+                    $this->load->language('sale/order');
+                    $data['entry_modal_cancelation'] = $this->language->get('entry_modal_cancelation');
+                    $data['entry_modal_cancelation_title'] = $this->language->get('entry_modal_cancelation_title');
+                    $data['entry_cancel'] = $this->language->get('entry_cancel');
+                    $data['entry_request_courier'] = $this->language->get('entry_request_courier');
+                    $data['entry_print_dpd_label'] = $this->language->get('entry_print_dpd_label');
+                    $data['entry_print_dpd_manifest'] = $this->language->get('entry_print_dpd_manifest');
+                    $data['entry_cancel_shipment'] = $this->language->get('entry_cancel_shipment');
+                    $data['entry_tracking_number'] = $this->language->get('entry_tracking_number');
+
+                    $data['dpd_request_courier'] = $this->url->link('extension/module/dpd_settings/requestCourier', 'user_token=' . $this->session->data['user_token'], true);
+
+                    $data['submit_orders_dpd'] = $this->url->link('extension/module/dpd_settings/submit_orders', 'user_token=' . $this->session->data['user_token'], true);
+                    $data['print_dpd_labels'] = $this->url->link('extension/module/dpd_settings/submit_orders', 'user_token=' . $this->session->data['user_token'] . '&action=print_dpd_labels', true);
+
+                    $data['print_dpd_manifests'] = $this->url->link('extension/module/dpd_settings/submit_orders', 'user_token=' . $this->session->data['user_token'] . '&action=print_dpd_manifests', true);
+                    $data['cancel_dpd_shipment'] = $this->url->link('extension/module/dpd_settings/submit_orders', 'user_token=' . $this->session->data['user_token'] . '&action=cancel_shipments', true);
+
+                    $data['error_dpd'] = false;
+                    $data['success_dpd'] = false;
+
+                    if (!isset($this->session->data['error_dpd']) || $this->session->data['error_dpd'] == '') {
+                        $data['error_dpd'] = false;
+                    } else {
+                        $data['error_dpd'] = true;
+                        $data['error_dpd'] = $this->session->data['error_dpd'];
+
+                        unset($this->session->data['error_dpd']);
+                    }
+
+                    if (!isset($this->session->data['success_dpd']) || $this->session->data['success_dpd'] == '') {
+                        $data['success_dpd'] = false;
+                    } else {
+                        $data['success_dpd'] = true;
+                        $data['success_dpd'] = $this->session->data['success_dpd'];
+
+                        unset($this->session->data['success_dpd']);
+                    }
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+    public function info()
+                ]]>
+            </search>
+
+            <add position="after" offset="1">
+                <![CDATA[
+                    $this->load->language('sale/order');
+                    $data['rod_service'] = $this->config->get('dpd_setting_rod_service');
+                    $data['text_shipping_return'] = $this->language->get('text_shipping_return');
+                    $data['button_save'] = $this->language->get('button_save');
+                    $data['text_rod_note'] = $this->language->get('text_rod_note');
+                    $data['text_shipping_labels_no'] = $this->language->get('text_shipping_labels_no');
+                    $data['text_parcel_status'] = $this->language->get('text_parcel_status');
+                    $data['button_shipping_labels_add'] = $this->language->get('button_shipping_labels_add');
+                    $data['entry_dpd_return_title'] = $this->language->get('entry_dpd_return_title');
+                    $data['entry_dpd_return_modal_title'] = $this->language->get('entry_dpd_return_modal_title');
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search index="0">
+                <![CDATA[
+                    $order_info = $this->model_sale_order->getOrder($order_id)
+                ]]>
+            </search>
+            <add position="after">
+                <![CDATA[
+                if ($order_info) {
+                    $data['shipping_labels'] = $order_info['shipping_labels'];
+                    $data['shipping_return'] = $order_info['shipping_return'];
+                    $data['shipping_note'] = $order_info['shipping_note'];
+
+                    $this->load->model('extension/shipping/dpdlivehandler');
+
+                    $pickup_point_name = $this->model_extension_shipping_dpdlivehandler->getTerminalName($order_info['shipping_parcel_id']);
+
+                    $barcodes =  $this->model_extension_shipping_dpdlivehandler->getOrderBarcode($order_id);
+
+                    if (count($barcodes) > 0) {
+                        $data['barcodes'] = true;
+                    } else {
+                        $data['barcodes'] = false;
+                    }
+
+                    $data['return_link'] = $this->url->link('extension/module/dpd_settings/reverseCollectionRequest', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . $order_id, true);
+
+                    if ($pickup_point_name) {
+                        $data['shipping_terminal'] = $pickup_point_name['company'] . ' ' . $pickup_point_name['pcode'] . ' ' . $pickup_point_name['city'];
+                    } else {
+                        $data['shipping_terminal'] = '';
+                    }
+
+                    $shipping_code = explode('.', $order_info['shipping_code']);
+
+                    if (isset($shipping_code)) {
+                        $data['shipping_code'] = $shipping_code[1];
+                    } else {
+                        $data['shipping_code'] = '';
+                    }
+
+                    $products = $this->model_sale_order->getOrderProducts($order_id);
+                    $total_order_quantity = 0;
+                    $total_different_products = 0;
+
+                    foreach ($products as $product) {
+                        $total_order_quantity += $product['quantity'];
+                        $total_different_products += 1;
+                    }
+
+                    $labels_setting = $this->config->get('dpd_setting_parcel_distribution');
+
+                    if ($order_info['shipping_labels'] == 1) {
+                        // All products in same shipment
+                        if ($labels_setting == 1) {
+                            $num_of_parcel = 1;
+                        // Each product in seperate shipment
+                        } else if ($labels_setting == 2) {
+                            $num_of_parcel = $total_different_products;
+                        // Each product wuantity in separate shipment
+                        } else if ($labels_setting == 3) {
+                            $num_of_parcel = $total_order_quantity;
+                        } else {
+                            $num_of_parcel = 1;
+                        }
+                    } else {
+                        $num_of_parcel = $order_info['shipping_labels'];
+                    }
+
+                    $data['shipping_labels'] = $num_of_parcel;
+                }
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                    $data['orders'][] = array(
+                ]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[
+                    $this->load->model('extension/shipping/dpdlivehandler');
+                    $tracking_numbers = $this->model_extension_shipping_dpdlivehandler->getOrderBarcode(isset($order_id) ? $order_id : $result['order_id']);
+                    $barcodes = array();
+                    $tracking_url = 'https://www.dpdgroup.com/'.$this->config->get('dpd_setting_api_url').'/mydpd/my-parcels/track?lang='.$this->config->get('dpd_setting_api_url').'&parcelNumber=';
+                    if (count($tracking_numbers) > 0) {
+                        foreach ($tracking_numbers as $key => $value) {
+                            array_push($barcodes, $value['dpd_barcode']);
+                        }
+                    }
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                    $this->url->link('sale/order/info', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . $result['order_id'] . $url, true),
+                ]]>
+            </search>
+
+            <add position="after">
+                <![CDATA[
+                    'tracking_url' => $tracking_url,
+                    'tracking_numbers' => $barcodes,
+                ]]>
+            </add>
+        </operation>
+
+        <!-- Sitas dar neveikia -->
+        <!-- <operation>
+            <search>
+                <![CDATA[
+                    $this->load->model('setting/store');
+                ]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[
+                    $data['shipping_parcel_id'] = isset($order_info) && isset($order_info['shipping_parcel_id']) ? $order_info['shipping_parcel_id'] : '';
+                ]]>
+            </add>
+        </operation> -->
+    </file>
+
+    <file path="admin/model/sale/order.php">
+        <operation>
+            <search>
+                <![CDATA[
+                    $order_query->row['shipping_code'],
+                ]]>
+            </search>
+
+            <add position="after">
+                <![CDATA[
+                    'shipping_parcel_id'      => $order_query->row['shipping_parcel_id'],
+                    'shipping_labels'         => $order_query->row['shipping_labels'],
+                    'shipping_return'         => $order_query->row['shipping_services'],
+                    'shipping_note'           => $order_query->row['shipping_note'],
+                    'shipping_timeframe'      => $order_query->row['shipping_timeframe'],
+                ]]>
+            </add>
+        </operation>
+    </file>
+
+    <!-- Admin side templates -->
+    <file path="admin/view/template/common/dashboard.twig">
+        <operation>
+            <search>
+                <![CDATA[
+                {% if error_install %}
+            ]]>
+            </search>
+            <add position="before">
+                <![CDATA[
+                    {% if error_dpd_login %}
+                        <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ error_dpd_login }}
+                          <button type="button" class="close" data-dismiss="alert">&times;</button>
+                        </div>
+                    {% endif %}
+              ]]>
+            </add>
+        </operation>
+    </file>
+
+    <file path="admin/view/template/sale/order_form.twig">
+        <operation>
+            <search>
+                <![CDATA[
+                    <button type="button" id="button-save" class="btn btn-primary"><i class="fa fa-check-circle"></i> {{ button_save }}</button>
+                ]]>
+            </search>
+
+            <add position="after">
+                <![CDATA[
+                    <input type="hidden" name="shipping_parcel_id" value="{{ shipping_parcel_id }}">
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                    {{ footer }}
+                ]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[
+                    <script type="text/javascript"> window.url_token = '{{ user_token }}'; </script>
+                    <script src="view/javascript/dpd-parcel-admin.js" type="text/javascript"></script>
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search><![CDATA[for (j in json['shipping_methods'][i]['quote']) {]]></search>
+            <add position="after">
+                <![CDATA[
+                    if (json['shipping_methods'][i]['quote'][j]['code'].includes('dpd_parcel')){
+                        json['shipping_methods'][i]['quote'][j]['title'] = 'DPD Pickup points';
+                    }
+                ]]>
+            </add>
+        </operation>
+    </file>
+
+    <file path="admin/view/template/sale/order_list.twig">
+        <operation>
+            <search>
+                <![CDATA[
+               <td class="text-center" colspan="8">{{ text_no_results }}</td>
+            ]]>
+            </search>
+            <add position="replace">
+                <![CDATA[
+                <td class="text-center" colspan="9">{{ text_no_results }}</td>
+              ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+               <div class="pull-right">
+            ]]>
+            </search>
+            <add position="after">
+                <![CDATA[
+                <a href="{{ dpd_request_courier }}&modal=1" data-remote="false" data-toggle="modal" data-target="#dpd_courier_request" class="btn btn-info">{{ entry_request_courier }}</a>
+                <button type="submit" form="form-order" formaction="{{ print_dpd_labels }}" class="btn btn-info">{{ entry_print_dpd_label }}</button>
+
+                <button type="submit" form="form-order" formaction="{{ print_dpd_manifests }}" class="btn btn-info">{{ entry_print_dpd_manifest }}</button>
+
+                <button class="btn btn-danger" data-toggle="modal" data-target="#confirm-delete">{{ entry_cancel_shipment }}</button>
+              ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                    {{ footer }}
+                ]]>
+            </search>
+            <add position="before">
+                <![CDATA[
+                    <div class="modal fade" id="confirm-delete" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    {{ entry_modal_cancelation_title }}
+                                </div>
+                                <div class="modal-body">
+                                    {{ entry_modal_cancelation }}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">{{ entry_cancel }}</button>
+                                    <button type="submit" form="form-order" formaction="{{ cancel_dpd_shipment }}" class="btn btn-danger">{{ entry_cancel_shipment }}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                    <div id="filter-order" class="col-md-3 col-md-push-9 col-sm-12 hidden-sm hidden-xs">
+                ]]>
+            </search>
+            <add position="before">
+                <![CDATA[
+                    <div class="col-md-12">
+                        {% if error_dpd != false %}
+                            <div class="dpd_error" style="padding: 10px; margin-bottom: 17px; border: 1px solid transparent; border-radius: 3px; background-color: #fef1f1; border-color: #fde2e2; color: #f56b6b;"><i class="fa fa-exclamation-circle"></i> {{ error_dpd }}
+                                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                            </div>
+                        {% endif %}
+
+                        {% if success_dpd != false %}
+                            <div class="dpd_success" style="padding: 10px; margin-bottom: 17px; border: 1px solid transparent; border-radius: 3px; background-color: #dff0d8; border-color: #d6e9c6; color: #3c763d;"><i class="fa fa-exclamation-circle"></i> {{ success_dpd }}
+                                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                            </div>
+                        {% endif %}
+                    </div>
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+               <div id="content">
+            ]]>
+            </search>
+            <add position="after">
+                <![CDATA[
+                <div id="dpd_courier_request" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                <h4 class="modal-title">{{ entry_request_courier }}</h4>
+                            </div>
+                            <div class="modal-body"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <script type="text/javascript">
+                    // Fill modal with content from link href
+                    $("#dpd_courier_request").on("show.bs.modal", function(e) {
+                        var link = $(e.relatedTarget);
+                        $(this).find(".modal-body").load(link.attr("href"), function() {
+                            // Count parcels
+                            var selected = $('input[name^=\'selected\']:checked');
+
+                            if (selected.length) {
+                                var order_ids = '';
+                                var parcelsCount = 0;
+
+                                for (parcelsCount = 0; parcelsCount < selected.length; parcelsCount++) {
+                                    order_ids += selected[parcelsCount].defaultValue + ', ';
+                                };
+
+                                $("#parcelsCount").val(parcelsCount);
+                                $("#dpd_order_ids").val(order_ids);
+                            }
+                        });
+                    });
+                </script>
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                    {{ order.customer }}
+                ]]>
+            </search>
+            <add position="after">
+                <![CDATA[
+                    <td class="text-left">
+                        {% for tracking_number in order['tracking_numbers'] %}
+                            <a href="{{ order['tracking_url'] }}{{ tracking_number }}" target="_blank">{{ tracking_number }}</a><br />
+                        {% endfor %}
+                    </td>
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                    <td class="text-left">{% if sort == 'order_status' %}
+                ]]>
+            </search>
+            <add position="before">
+                <![CDATA[
+                    <td class="text-left">
+                    {{ entry_tracking_number }}
+                  </td>
+                ]]>
+            </add>
+        </operation>
+    </file>
+
+    <file path="admin/view/template/sale/order_info.twig">
+        <operation>
+            <search index="1">
+                <![CDATA[
+                </tbody>
+            ]]>
+            </search>
+            <add position="before">
+                <![CDATA[
+                {% if barcodes == false %}
+                    {% if shipping_code != dpd_courier_same %}
+                        {% if shipping_terminal == '' and rod_service == 1 %}
+                        <tr>
+                            <td>{{ text_shipping_return }}</td>
+                            <td class="text-right">
+                                <input type="checkbox" name="shipping_return" value="{{ shipping_return }}" {% if shipping_return == 1 %} checked {% endif %} /><br />
+                                <input type="text" name="dnote_reference" placeholder="{{ text_rod_note }}" value="{{ shipping_note }}" />
+                            </td>
+                            <td class="text-center">
+                              <button id="button-rod-note-update" data-loading-text="{{ text_loading }}" data-toggle="tooltip" title="{{ button_save }}" class="btn btn-success btn-xs"><i class="fa fa-plus-circle"></i></button>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+
+                <tr>
+                    <td>{{ text_shipping_labels_no }}</td>
+                    <td class="text-right"><input type="text" name="shipping_labels" value="{{ shipping_labels }}" style="width: 40px;" /></td>
+                    <td class="text-center">
+                        <button id="button-shipping-labels-update" data-loading-text="{{ text_loading }}" data-toggle="tooltip" title="{{ button_shipping_labels_add }}" class="btn btn-success btn-xs"><i class="fa fa-plus-circle"></i></button>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>{{ text_parcel_status }}</td>
+                    <td class="text-right"><label class="shipping_status label label-success"></label></td>
+                    <td class="text-center">
+                        <button id="button-get-parcel-status" data-loading-text="{{ text_loading }}" class="btn btn-info btn-xs"><i class="fa fa-refresh"></i></button>
+                    </td>
+                </tr>
+
+                <tr>
+                  <td>{{ entry_dpd_return_title }}</td>
+                  <td></td>
+                  <td>
+                    <a href="{{ return_link }}" data-remote="false" data-toggle="modal" data-target="#dpd_collection_request" class="btn btn-success btn-xs"><i class="fa fa-plus-circle"></i></a>
+                    <div id="dpd_collection_request" class="modal fade" role="dialog">
+                      <div class="modal-dialog">
+                          <div class="modal-content">
+                              <div class="modal-header">
+                                  <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                  <h4 class="modal-title">{{ entry_dpd_return_modal_title }}</h4>
+                              </div>
+                              <div class="modal-body"></div>
+                          </div>
+                      </div>
+                    </div>
+
+                    <script>
+                      // Fill modal with content from link href
+                      $("#dpd_collection_request").on("show.bs.modal", function(e) {
+                        var link = $(e.relatedTarget);
+                        $(this).find(".modal-body").load(link.attr("href"), function() {});
+                      });
+                    </script>
+                  </td>
+                </tr>
+              ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search index="0">
+                <![CDATA[
+                    <script type="text/javascript">
+                ]]>
+            </search>
+            <add position="after">
+                <![CDATA[
+                    $(document).ready(function() {
+                        if($('input[name="shipping_return"]').is(':checked')) {
+                            $('input[name="dnote_reference"]').show();
+                        } else {
+                            $('input[name="dnote_reference"]').hide();
+                        }
+
+                        $('input[name="shipping_return"]').change(function() {
+                            if($(this).is(':checked')) {
+                                data = 'return_documents=1';
+                                $('input[name="dnote_reference"]').fadeIn();
+                            } else {
+                                data = 'return_documents=0';
+                                $('input[name="dnote_reference"]').fadeOut();
+                            }
+
+                            data += '&order_id={{ order_id }}';
+
+                            $.ajax({
+                                url: 'index.php?route=extension/module/dpd_settings/updateRodServices&user_token={{ user_token }}',
+                                type: 'post',
+                                data: data,
+                                dataType: 'json',
+                                beforeSend: function() {
+                                    $(this).prop("disabled", true);
+                                    $(this).addClass("disabled");
+                                },
+                                complete: function() {
+                                    $(this).prop("disabled", false);
+                                    $(this).removeClass("disabled");
+                                },
+                                success: function(json) {
+
+                                }
+                            });
+                        });
+                    });
+
+                    $(document).delegate('#button-rod-note-update', 'click', function() {
+                        $.ajax({
+                            url: 'index.php?route=extension/module/dpd_settings/updateRodNote&user_token={{ user_token }}',
+                            type: 'post',
+                            data: 'note=' + encodeURIComponent($('input[name=\'dnote_reference\']').val()) + '&order_id={{ order_id }}',
+                            dataType: 'json',
+                            beforeSend: function() {
+                                $('#button-rod-note-update').button('loading');
+                            },
+                            complete: function() {
+                                $('#button-rod-note-update').button('reset');
+                            },
+                            success: function(json) {
+                                $('.alert').remove();
+
+                                if (json['error']) {
+                                    $('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + '</div>');
+                                }
+
+                                if (json['success']) {
+                                    $('#content > .container-fluid').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + json['success'] + '</div>');
+                                }
+                            },
+                            error: function(xhr, ajaxOptions, thrownError) {
+                                alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+                            }
+                        });
+                    });
+
+
+                    $(document).delegate('#button-shipping-labels-update', 'click', function() {
+                        $.ajax({
+                            url: 'index.php?route=extension/module/dpd_settings/updatePrintingLabelsNo&user_token={{ user_token }}',
+                            type: 'post',
+                            data: 'labels_number=' + encodeURIComponent($('input[name=\'shipping_labels\']').val()) + '&order_id={{ order_id }}',
+                            dataType: 'json',
+                            beforeSend: function() {
+                                $('#button-shipping-labels-update').button('loading');
+                            },
+                            complete: function() {
+                                $('#button-shipping-labels-update').button('reset');
+                            },
+                            success: function(json) {
+                                $('.alert').remove();
+
+                                if (json['error']) {
+                                    $('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + '</div>');
+                                }
+
+                                if (json['success']) {
+                                    $('#content > .container-fluid').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + json['success'] + '</div>');
+                                }
+                            },
+                            error: function(xhr, ajaxOptions, thrownError) {
+                                alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+                            }
+                        });
+                    });
+
+                    $(document).delegate('#button-get-parcel-status', 'click', function() {
+                        $.ajax({
+                            url: 'index.php?route=extension/module/dpd_settings/getTracking&user_token={{ user_token }}',
+                            type: 'post',
+                            data: 'order_id={{ order_id }}',
+                            dataType: 'json',
+                            beforeSend: function() {
+                                $('#get_shipping').button('loading');
+                            },
+                            complete: function() {
+                                $('#get_shipping').button('reset');
+                            },
+                            success: function(json) {
+                                $('.alert').remove();
+
+                                if (json['error']) {
+                                    $('#content > .container-fluid').prepend('<div class="alert alert-danger">' + json['error'] + '</div>');
+                                }
+
+                                if (json['success']) {
+                                    $('#content > .container-fluid').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + json['success'] + '</div>');
+                                }
+                            },
+                            error: function(xhr, ajaxOptions, thrownError) {
+                                alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+                            }
+                        });
+                    });
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                {{ shipping_method }}
+            ]]>
+            </search>
+            <add position="replace">
+                <![CDATA[
+                    {% if shipping_terminal %}
+                        {{ shipping_method }} ( {{ shipping_terminal }} )
+
+                    {% else %}
+                        {{ shipping_method }}
+                    {% endif %}
+              ]]>
+            </add>
+        </operation>
+    </file>
+
+    <!-- Admin side languages -->
+    <file path="admin/language/en-gb/sale/order.php">
+        <operation>
+            <search>
+                <![CDATA[
+                <?php
+                ]]>
+            </search>
+
+            <add position="after">
+                <![CDATA[
+                    $_['entry_cancel'] = 'Cancel';
+                    $_['entry_modal_cancelation_title'] = 'Confirm your cancelation';
+                    $_['entry_modal_cancelation'] = 'Are sure to cancel shipments? This action cannot be undo';
+                    $_['entry_request_courier'] = 'Request Courier';
+                    $_['entry_print_dpd_label'] = 'Print DPD Labels';
+                    $_['entry_print_dpd_manifest'] = 'Close DPD manifest';
+                    $_['entry_cancel_shipment'] = 'Cancel Shipments';
+                    $_['text_shipping_return'] = 'Return back documents from customer?';
+                    $_['text_rod_note'] = 'Enter the note';
+                    $_['text_shipping_labels_no'] = 'Number of printing labels';
+                    $_['text_parcel_status'] = 'Click refresh button to know last parcel status';
+                    $_['button_shipping_labels_add'] = 'Save number of printing labels';
+                    $_['entry_tracking_number'] = 'Tracking number';
+                    $_['entry_dpd_return_title'] = 'Create Collection request';
+                    $_['entry_dpd_return_modal_title'] = 'Collection request to returned good';
+                ]]>
+            </add>
+        </operation>
+    </file>
+
+    <file path="admin/language/ee-EE/sale/order.php">
+        <operation>
+            <search>
+                <![CDATA[
+                <?php
+                ]]>
+            </search>
+
+            <add position="after">
+                <![CDATA[
+                    $_['entry_cancel'] = 'Tühista';
+                    $_['entry_modal_cancelation_title'] = 'Kinnita tühistamine';
+                    $_['entry_modal_cancelation'] = 'Kas soovite saadetise tühistada? Seda ei saa tagasi võtta';
+                    $_['entry_request_courier'] = 'Telli kuller';
+                    $_['entry_print_dpd_label'] = 'Trüki DPD pakisildid';
+                    $_['entry_print_dpd_manifest'] = 'Sulge DPD manifest';
+                    $_['entry_cancel_shipment'] = 'Tühista saadetised';
+                    $_['text_shipping_return'] = 'Kasuta dokumenditagastust?';
+                    $_['text_rod_note'] = 'Sisesta kommentaar';
+                    $_['text_shipping_labels_no'] = 'Trükitavate siltide arv';
+                    $_['text_parcel_status'] = 'Vajuta nuppu, et näha paki viimast staatust';
+                    $_['button_shipping_labels_add'] = 'Salvesta siltide arv';
+                    $_['entry_tracking_number'] = 'Pakinumber';
+                    $_['entry_dpd_return_title'] = 'Loo pealekorje kolmandalt osapoolelt';
+                    $_['entry_dpd_return_modal_title'] = 'Loo pealekorje kauba tagastamiseks';
+                ]]>
+            </add>
+        </operation>
+    </file>
+
+    <!-- Catalog side -->
+    <file path="catalog/controller/api/shipping.php">
+        <operation>
+            <search>
+                <![CDATA[
+                    $quote['title']
+                ]]>
+            </search>
+
+            <add position="replace">
+                <![CDATA[
+                    preg_replace("/<img[^>]+\>/i", "", $quote['title'])
+                ]]>
+            </add>
+        </operation>
+    </file>
+
+    <file path="catalog/controller/api/shipping.php">
+        <operation>
+            <search>
+                <![CDATA[
+                    class ControllerApiShipping extends Controller {
+                ]]>
+            </search>
+
+            <add position="after">
+                <![CDATA[
+                    public function dpd_terminals() {
+                        $this->load->model('extension/shipping/dpd_parcel');
+
+                        $country = $this->session->data['shipping_address']['iso_code_2'];
+                        $city = $this->session->data['shipping_address']['city'];
+
+                        //$terminals = $this->model_extension_shipping_dpd_parcel->getTerminals($country, $city);
+                        $terminals = $this->model_extension_shipping_dpd_parcel->getTerminals($country);
+
+                        $this->response->addHeader('Content-Type: application/json');
+                        $this->response->setOutput(json_encode($terminals->rows));
+                    }
+
+                    public function dpd_set_terminal() {
+                        $this->session->data['shipping_parcel_id'] = $this->request->get['code'];
+
+                        $this->response->addHeader('Content-Type: application/json');
+                        $this->response->setOutput(json_encode(['shipping_parcel_id' => $this->session->data['shipping_parcel_id']]));
+                    }
+                ]]>
+            </add>
+        </operation>
+    </file>
+
+    <file path="catalog/controller/checkout/shipping_method.php">
+        <operation>
+            <search>
+                <![CDATA[
+                    if (!isset($this->request->post['shipping_method'])) {
+                ]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[
+                    $google_map_api = $this->config->get('dpd_setting_google_map_api_key');
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                    if (!$json) {
+                ]]>
+            </search>
+
+            <add position="after">
+                <![CDATA[
+                    $this->session->data['shipping_timeframe'] = isset($this->request->post['shipping_timeframe']) ? strip_tags($this->request->post['shipping_timeframe']) : '';
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                    if (!$json) {
+                ]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[
+                    $this->load->model('extension/shipping/dpd_parcel');
+
+                    if ($google_map_api == '') {
+                        $terminal_id = explode('|', $this->request->post['shipping_method']);
+
+                        $dpd_shipping_method = explode('.', $terminal_id[0]);
+
+                        if ($dpd_shipping_method[0] == 'dpd_parcel') {
+                            if (isset($terminal_id[0]) && isset($terminal_id[1])) {
+                                if ($terminal_id[1] == '0') {
+                                    $json['error']['warning'] = $this->model_extension_shipping_dpd_parcel->getNoParcelWarningText();
+                                } else {
+                                    $this->session->data['shipping_parcel_id'] = $terminal_id[1];
+                                }
+                            }
+                        }
+                    } else {
+                        if (isset($this->request->post['shipping_method']) && strpos($this->request->post['shipping_method'], 'dpd_parcel') > -1 && (!isset($this->session->data['shipping_parcel_id']) || (isset($this->session->data['shipping_parcel_id']) && !$this->session->data['shipping_parcel_id']))) {
+                            $json['error']['warning'] = $this->model_extension_shipping_dpd_parcel->getNoParcelWarningText();
+                        }
+                    }
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                    $shipping = explode('.', $this->request->post['shipping_method']);
+                ]]>
+            </search>
+
+            <add position="after">
+                <![CDATA[
+                     if ($google_map_api == '') {
+                        $new_shipping = explode('|', $shipping[1]);
+                        if (isset($new_shipping[2])) {
+                            $this->session->data['shipping_method_title'] = isset($new_shipping[2]) ? $new_shipping[2] : '';
+                        } else {
+                            $this->session->data['shipping_method_title'] = $this->session->data['shipping_methods'][$shipping[0]]['quote'][$shipping[1]]['title'];
+                        }
+                    } else {
+                        $new_shipping[0] = $shipping[1];
+
+                        unset($this->session->data['shipping_method_title']);
+
+                        if (isset($shipping[0]) && $shipping[0] == 'dpd_parcel') {
+                            $this->session->data['shipping_method_title'] = 'Shipping by DPD Pickup points';
+                        }
+                    }
+
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                    ['quote'][$shipping[1]]
+                ]]>
+            </search>
+
+            <add position="replace">
+                <![CDATA[
+                    ['quote'][$new_shipping[0]]
+                ]]>
+            </add>
+        </operation>
+        <operation>
+            <search>
+                <![CDATA[$this->response->addHeader('Content-Type: application/json');]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[if(isset($this->session->data['shipping_method_title'])){
+            $this->session->data['shipping_method']['title'] = $this->session->data['shipping_method_title'];
+        }]]>
+            </add>
+        </operation>
+    </file>
+
+    <file path="catalog/controller/checkout/confirm.php">
+        <operation>
+            <search>
+                <![CDATA[
+                    $order_data['comment'] = $this->session->data['comment'];
+                ]]>
+            </search>
+
+            <add position="after">
+                <![CDATA[
+                    $order_data['shipping_timeframe'] = $this->session->data['shipping_timeframe'];
+
+                    $order_data['shipping_parcel_id'] = (isset($this->session->data['shipping_method']['code']) && strpos($this->session->data['shipping_method']['code'], 'dpd_parcel') > -1 && isset($this->session->data['shipping_parcel_id']) ? $this->session->data['shipping_parcel_id'] : '');
+
+                    // Remove markup from method name
+                    if($order_data['shipping_parcel_id']) {
+                        $this->load->model('extension/shipping/dpd_parcel');
+                        $order_data['shipping_method'] = $this->model_extension_shipping_dpd_parcel->getMethodTitleText();
+                    }
+                ]]>
+            </add>
+        </operation>
+    </file>
+
+    <file path="catalog/controller/checkout/success.php">
+        <operation>
+            <search>
+                <![CDATA[
+                    unset($this->session->data['shipping_method']);
+                ]]>
+            </search>
+
+            <add position="after">
+                <![CDATA[
+                    unset($this->session->data['shipping_timeframe']);
+                    if (isset($this->session->data['shipping_parcel_id'])) {
+                        unset($this->session->data['shipping_parcel_id']);
+                    }
+
+                    unset($this->session->data['shipping_method_title']);
+                ]]>
+            </add>
+        </operation>
+    </file>
+
+    <file path="catalog/controller/common/footer.php">
+        <operation>
+            <search>
+                <![CDATA[
+                    public function index() {
+                ]]>
+            </search>
+
+            <add position="replace">
+                <![CDATA[
+                public function index() {
+                    $data['dpd_gmap_api_key'] = $this->config->get('dpd_setting_google_map_api_key');
+                ]]>
+            </add>
+        </operation>
+    </file>
+
+    <!-- Models -->
+    <file path="catalog/model/checkout/order.php">
+        <operation>
+            <search>
+                <![CDATA[
+                    $order_id = $this->db->getLastId();
+                ]]>
+            </search>
+
+            <add position="after">
+                <![CDATA[
+                    if (isset($data['shipping_timeframe']) && $data['shipping_timeframe']) {
+                        $this->db->query("UPDATE " . DB_PREFIX . "order SET shipping_timeframe = '" . $this->db->escape($data['shipping_timeframe']) . "' WHERE order_id = '" . (int)$order_id . "'");
+                    }
+
+                    if(isset($data['shipping_parcel_id']) && $data['shipping_parcel_id']) {
+                        $this->db->query("UPDATE `" . DB_PREFIX . "order` SET shipping_parcel_id = '" . $this->db->escape($data['shipping_parcel_id']) . "' WHERE order_id = '" . (int)$order_id . "'");
+                    }
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                    $this->db->escape($data['shipping_method'])
+                ]]>
+            </search>
+
+            <add position="replace">
+                <![CDATA[
+                    $this->db->escape(strip_tags($data['shipping_method']))
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                    $this->db->escape($total['title'])
+                ]]>
+            </search>
+
+            <add position="replace">
+                <![CDATA[
+                    $this->db->escape(strip_tags(preg_replace("/<style\\b[^>]*>(.*?)<\\/style>/s", "", $total['title'])))
+                ]]>
+            </add>
+        </operation>
+        <operation>
+            <search>
+                <![CDATA[$this->db->query("DELETE FROM " . DB_PREFIX . "order_product WHERE order_id = '" . (int)$order_id . "'");]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[if(isset($data['dpd_parcel'])){
+            $this->db->query("UPDATE `" . DB_PREFIX . "order` SET shipping_parcel_id = '" . $this->db->escape($data['dpd_parcel']) . "' WHERE order_id = '" . (int)$order_id . "'");
+        }]]>
+            </add>
+        </operation>
+    </file>
+
+    <file path="catalog/model/extension/payment/cod.php">
+        <operation>
+            <search>
+                <![CDATA[
+                $method_data = array();
+                ]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[
+                    if (isset($this->session->data['shipping_method']) && $this->session->data['shipping_method']) {
+                        $shipping_method = explode('.', $this->session->data['shipping_method']['code']);
+
+                        if (isset($this->session->data['shipping_address']) && $this->session->data['shipping_address']) {
+                            if (isset($this->session->data['shipping_address']['iso_code_2']) && $this->session->data['shipping_address']['iso_code_2']) {
+                                switch (strtolower($this->session->data['shipping_address']['iso_code_2'])) {
+                                    case 'lt':
+                                        $status = true;
+                                        break;
+
+                                    case 'lv':
+                                        $status = true;
+                                        break;
+
+                                    case 'ee':
+                                        $status = true;
+                                        break;
+
+                                    default:
+                                        $status = false;
+                                        break;
+                                }
+                            }
+                        }
+
+                        if ($shipping_method[0] == 'dpd_courier') {
+                            if ($this->config->get('shipping_dpd_courier_cod_status') == 1) {
+                                $status = true;
+                            } else {
+                                $status = false;
+                            }
+                        }
+
+                        if ($shipping_method[0] == 'dpd_courier_sat') {
+                            if ($this->config->get('shipping_dpd_courier_sat_cod_status') == 1) {
+                                $status = true;
+                            } else {
+                                $status = false;
+                            }
+                        }
+
+                        if ($shipping_method[0] == 'dpd_courier_same') {
+                            if ($this->config->get('shipping_dpd_courier_same_cod_status') == 1) {
+                                $status = true;
+                            } else {
+                                $status = false;
+                            }
+                        }
+
+                        if ($shipping_method[0] == 'dpd_parcel') {
+                            if ($this->config->get('shipping_dpd_parcel_cod_status') == 1) {
+                                $status = true;
+
+                                if (isset($this->session->data['shipping_parcel_id']) && $this->session->data['shipping_parcel_id']) {
+                                    $this->load->model('extension/shipping/dpd_parcel');
+                                    $cod_status = $this->model_extension_shipping_dpd_parcel->getTerminalCodStatus($this->session->data['shipping_parcel_id']);
+
+                                    if ($cod_status == 1) {
+                                        $status = true;
+                                    } else {
+                                        $status = false;
+                                    }
+                                }
+                            } else {
+                                $status = false;
+                            }
+                        }
+                    }
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                'title'      => $this->language->get('text_title'),
+                ]]>
+            </search>
+
+            <add position="replace">
+                <![CDATA[]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[
+                    return $method_data;
+                ]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[
+                if ($status) {
+                    if ($this->config->get('total_cod_fee_status') > 0) {
+                        $method_data['title'] = $this->language->get('text_title') . ' - ' .  $this->currency->format($this->tax->calculate($this->config->get('total_cod_fee_fee'), $this->config->get('total_cod_fee_tax_class_id'), true), $this->session->data['currency']);
+                    } else {
+                        $method_data['title'] = $this->language->get('text_title');
+                    }
+                }
+                ]]>
+            </add>
+        </operation>
+    </file>
+    <file path="catalog/controller/checkout/uni_checkout.php">
+        <operation>
+            <search>
+                <![CDATA[$this->tax->setShippingAddress($shipping_address['country_id'], $shipping_address['zone_id']);]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[//dpd
+            if(isset($this->request->post['shipping_method'])) {
+                $shipping_method = $this->request->post['shipping_method'];
+                $shipping = explode('.', $shipping_method);
+                if (isset($shipping[0]) && $shipping[0] == 'dpd_parcel') {
+                    $google_map_api = $this->config->get('dpd_setting_google_map_api_key');
+                    $this->load->model('extension/shipping/dpd_parcel');
+                    if ($google_map_api == '') {
+                        $terminal_id = explode('|', $this->request->post['shipping_method']);
+                        $dpd_shipping_method = explode('.', $terminal_id[0]);
+                        if ($dpd_shipping_method[0] == 'dpd_parcel') {
+                            if (isset($terminal_id[0]) && isset($terminal_id[1])) {
+                                if ($terminal_id[1] == '0') {
+                                    $data['error_warning'] = $this->model_extension_shipping_dpd_parcel->getNoParcelWarningText();
+                                } else {
+                                    $this->session->data['shipping_parcel_id'] = $terminal_id[1];
+                                }
+                            }
+                        }
+                    } else {
+                        if (isset($this->request->post['shipping_method']) && strpos($this->request->post['shipping_method'], 'dpd_parcel') > -1 && (!isset($this->session->data['shipping_parcel_id']) || (isset($this->session->data['shipping_parcel_id']) && !$this->session->data['shipping_parcel_id']))) {
+                            $data['error_warning'] = $this->model_extension_shipping_dpd_parcel->getNoParcelWarningText();
+                        }
+                    }
+                }
+            }
+            //dpd]]>
+            </add>
+        </operation>
+        <operation>
+            <search>
+                <![CDATA[if(isset($shipping[0]) && isset($shipping[1]) && isset($method_data[$shipping[0]]['quote'][$shipping[1]])) {]]>
+            </search>
+
+            <add position="replace" >
+                <![CDATA[if(isset($shipping[0]) && $shipping[0] == 'dpd_parcel'){
+                $new_shipping = explode('|', $shipping[1]);
+                if (isset($new_shipping[2])) {
+                    $this->session->data['shipping_method'] = $this->session->data['shipping_method_reserved'] = $method_data[$shipping[0]]['quote'][$new_shipping[0]];
+                    $this->session->data['shipping_method']['title'] = $this->session->data['shipping_method_reserved']['title'] = isset($new_shipping[2]) ? $new_shipping[2] : '';
+                }
+            }elseif(isset($shipping[0]) && isset($shipping[1]) && isset($method_data[$shipping[0]]['quote'][$shipping[1]])) {]]>
+            </add>
+        </operation>
+        <operation>
+            <search>
+                <![CDATA[$order_data['shipping_code'] = isset($this->session->data['shipping_method']['code']) ? $this->session->data['shipping_method']['code'] : '';]]>
+            </search>
+
+            <add position="after" >
+                <![CDATA[$order_data['shipping_timeframe'] = '';
+
+            if(isset($this->session->data['shipping_method']['code'])){
+                $shipping = explode('.', $this->session->data['shipping_method']['code']);
+                if (isset($shipping[0]) && $shipping[0] == 'dpd_courier') {
+                    if(isset($this->session->data['shipping_timeframe'])){
+                        $order_data['shipping_timeframe'] = $this->session->data['shipping_timeframe'];
+                    }
+                }
+            }
+
+            $order_data['shipping_parcel_id'] = '0';
+
+            if(isset($this->session->data['shipping_method']['code'])){
+                $shipping = explode('.', $this->session->data['shipping_method']['code']);
+                if (isset($shipping[0]) && $shipping[0] == 'dpd_parcel') {
+                    if(isset($this->session->data['shipping_parcel_id'])){
+                        $order_data['shipping_parcel_id'] = $this->session->data['shipping_parcel_id'];
+                    }
+                }
+            }]]>
+            </add>
+        </operation>
+    </file>
+
+
+    <!-- Front template -->
+    <file path="catalog/view/theme/*/template/checkout/checkout.twig">
+        <operation>
+            <search>
+                <![CDATA[
+                    data: $('#collapse-shipping-method input[type=\'radio\']:checked, #collapse-shipping-method textarea'),
+                ]]>
+            </search>
+
+            <add position="replace">
+                <![CDATA[
+                    data: $('#collapse-shipping-method input[type=\'radio\']:checked, #collapse-shipping-method textarea, #collapse-shipping-method select[name=\'shipping_timeframe\']:visible'),
+                ]]>
+            </add>
+        </operation>
+    </file>
+
+    <file path="catalog/view/theme/*/template/checkout/shipping_method.twig">
+        <operation>
+            <search>
+                <![CDATA[
+                    {{ quote.title }} - {{ quote.text }}
+                ]]>
+            </search>
+
+            <add position="after">
+                <![CDATA[
+                    <script type="text/javascript">
+                        function load_timeframe() {
+                          $("input[name=\"shipping_method\"]").change(function() {
+                            var selected = $(this).val().split('.');
+
+                            $('div.' + selected[1]).slideDown('fast');
+                            $('.shipping-timeframe').not('div.' + selected[1]).slideUp('fast');
+                          });
+                        }
+
+                        $(document).ready(function() {
+                          var selected = $('input[name=\"shipping_method\"]').val().split('.');
+
+                          $('div.' + selected[1]).slideDown('fast');
+
+                          load_timeframe();
+                        });
+                    </script>
+                ]]>
+            </add>
+        </operation>
+        <operation>
+            <search>
+                <![CDATA[
+                    {{ quote.title }} - {{ quote.text }}
+                ]]>
+            </search>
+
+            <add position="after">
+                <![CDATA[
+                {% if quote['timeframe'] != '' %}
+                    {{ quote['timeframe'] }}
+                {% endif %}
+                ]]>
+            </add>
+        </operation>
+    </file>
+
+
+    <file path="catalog/view/theme/journal3/template/journal3/checkout/shipping_method.twig">
+        <operation>
+            <search>
+                <![CDATA[<div v-for="shipping_method in shipping_methods">]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[
+                    <span class="text-danger" v-if="error && error.shipping_code" v-html="error.shipping_code"></span>
+                    ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[<div class="radio" v-for="quote in shipping_method.quote">]]>
+            </search>
+
+
+            <add position="replace" offset="8">
+                <![CDATA[<div class="radio" v-for="quote in shipping_method.quote">
+			<span v-if="!quote.gmap_api">
+                <label>
+                    <input v-bind:value="quote.code" type="radio" name="shipping_method" v-model="order_data.shipping_code" v-bind:id="quote.code"/>
+                    <span class="shipping-quote-title" v-html="quote.title + (quote.text ? ' - ' + quote.text : '')"></span>
+                    <span class="shipping-quote-desc" v-if="quote.desc" v-html="quote.desc"></span>
+                    <span v-if="quote.timeframe" v-html="quote.timeframe"></span>
+                </label>
+            </span>
+			<span style="padding-left: 20px;" v-else>
+				<input v-bind:value="quote.code" type="radio" name="shipping_method" v-model="order_data.shipping_code" v-bind:id="quote.code"/>
+				<span class="shipping-quote-title" v-html="quote.title + (quote.text ? ' - ' + quote.text : '')"></span>
+				<span class="shipping-quote-desc" v-if="quote.desc" v-html="quote.desc"></span>
+			</span>]]>
+            </add>
+        </operation>
+    </file>
+
+    <file path="catalog/view/theme/*/template/common/footer.twig">
+        <operation>
+            <search>
+                <![CDATA[
+                    </body>
+                ]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[
+                {% if dpd_gmap_api_key != '' %}
+                    <script type="text/javascript">
+                        window.wow_gmap_api_key = '{{ dpd_gmap_api_key }}';
+                    </script>
+
+                    <!-- Google Maps Clusterer plugin for DPD Parcel -->
+                    <script src="catalog/view/javascript/dpd-gmaps-markerclusterer.js" type="text/javascript"></script>
+
+                    <!-- DPD Postcode geocoder plugin -->
+                    <script src="catalog/view/javascript/dpd-postcode.js" type="text/javascript"></script>
+
+                    <!-- DPD Parcel store plugin -->
+                    <script src="catalog/view/javascript/dpd-parcel.js" type="text/javascript"></script>
+
+                    <!-- Load Google Maps API -->
+                    <script src="https://maps.googleapis.com/maps/api/js?key={{ dpd_gmap_api_key }}"></script>
+                {% endif %}
+                ]]>
+            </add>
+        </operation>
+    </file>
+
+    <!-- Just for OC 3 -->
+    <file path="catalog/controller/checkout/checkout.php">
+        <operation>
+            <search>
+                <![CDATA[
+                    public function country() {
+                ]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[
+                    public function dpd_terminals() {
+                        $this->load->model('extension/shipping/dpd_parcel');
+
+                        $country = $this->session->data['shipping_address']['iso_code_2'];
+                        $city = $this->session->data['shipping_address']['city'];
+
+                        //$terminals = $this->model_extension_shipping_dpd_parcel->getTerminals($country, $city);
+                        $terminals = $this->model_extension_shipping_dpd_parcel->getTerminals($country);
+
+                        $this->response->addHeader('Content-Type: application/json');
+                        $this->response->setOutput(json_encode($terminals->rows));
+                    }
+
+                    public function dpd_set_terminal() {
+                        $this->session->data['shipping_parcel_id'] = $this->request->get['code'];
+
+                        $this->response->addHeader('Content-Type: application/json');
+                        $this->response->setOutput(json_encode(['shipping_parcel_id' => $this->session->data['shipping_parcel_id']]));
+                    }
+                ]]>
+            </add>
+        </operation>
+    </file>
+
+    <!-- JOurnal 3 -->
+    <file path="catalog/controller/journal3/checkout.php">
+        <operation>
+            <search><![CDATA[$this->journal3->document->addScript('catalog/view/theme/journal3/js/checkout.js', 'footer');]]></search>
+
+            <add position="replace"><![CDATA[
+            $this->journal3->document->addScript('catalog/view/theme/journal3/js/new_checkout.js', 'footer');
+$this->journal3->document->addScript('catalog/view/javascript/dpd_journal3.js', 'footer');
+$data['dpd_gmap_api_key'] = $this->config->get('dpd_setting_google_map_api_key');
+]]></add>
+        </operation>
+
+        <operation>
+            <search><![CDATA[public function save()]]></search>
+
+            <add position="before"><![CDATA[
+        public function setDPDParcelID() {
+            if (Arr::get($this->request->post, 'shipping_method_code') && $parcel_id = Arr::get($this->request->post, 'dpd_parcel_id')){
+                $this->session->data['shipping_parcel_id'] = $parcel_id;
+                $json['success'] = 'success';
+            } else {
+                $json['error'] = 'error';
+            }
+
+            $this->response->addHeader('Content-Type: application/json');
+            $this->response->setOutput(json_encode($json));
+        }
+]]></add>
+        </operation>
+
+        <operation>
+            <search><![CDATA[$agree = $this->model_journal3_links->getInformation($this->config->get('config_checkout_id'));]]></search>
+
+            <add position="before"><![CDATA[
+                if(isset($this->session->data['shipping_method']['code'])){
+					$shipping = explode('.', $this->session->data['shipping_method']['code']);
+					if (isset($shipping[0]) && $shipping[0] == 'dpd_parcel') {
+						if (empty($this->session->data['shipping_parcel_id'])) {
+							$error['shipping_code'] = 'Select parcel or pickup point';
+						}
+					}
+				}
+            ]]></add>
+        </operation>
+
+    </file>
+
+    <file path="catalog/model/journal3/checkout.php">
+        <operation>
+            <search>
+                <![CDATA[
+                    	$shipping_method = Arr::get($this->session->data, 'shipping_methods.' . $shipping[0] . '.quote.' . $shipping[1]);
+                ]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[
+                    $new_shipping[0] = $shipping[1];
+
+                    unset($this->session->data['shipping_method_title']);
+
+                    if (isset($shipping[0]) && $shipping[0] == 'dpd_parcel') {
+                        $this->session->data['shipping_method_title'] = 'Shipping by DPD Pickup points';
+                    }
+                ]]>
+            </add>
+        </operation>
+
+
+
+        <operation>
+            <search>
+                <![CDATA[private function payment_methods($total) {]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[private function dpdCheck($code){
+
+		$shipping = explode('.', $code);
+
+		$google_map_api = $this->config->get('dpd_setting_google_map_api_key');
+
+		unset($this->session->data['shipping_method_title']);
+
+		if (isset($shipping[0]) && $shipping[0] == 'dpd_parcel') {
+			$this->session->data['shipping_method_title'] = $this->language->get('entry_dpd_pick');
+
+			if(isset($this->session->data['shipping_parcel_id']) && $this->session->data['shipping_parcel_id']){
+
+				$this->load->model('extension/shipping/dpd_parcel');
+
+				$row = $this->model_extension_shipping_dpd_parcel->getTerminalByCode($this->session->data['shipping_parcel_id']);
+				if($row){
+					$this->session->data['shipping_method_title'] = $row['company'] . ', ' . $row['street'];
+				}
+			}
+		}
+
+		if(isset($shipping[1])){
+			return $shipping[1];
+		}
+	}]]>
+            </add>
+        </operation>
+    </file>
+
+    <file path="catalog/controller/api/order.php">
+        <operation>
+            <search><![CDATA[$this->session->data['shipping_method'] = $this->session->data['shipping_methods'][$shipping[0]]['quote'][$shipping[1]];]]></search>
+            <add position="after"><![CDATA[//DPD IC mod start
+            if ($shipping[0] == 'dpd_parcel'){
+    $this->session->data['shipping_method']['title'] = 'DPD Pickup points';
+            }
+                //DPD IC mod end]]>
+            </add>
+        </operation>
+        <operation>
+            <search><![CDATA[$this->model_checkout_order->editOrder($order_id, $order_data);]]></search>
+            <add position="before"><![CDATA[//DPD IC mod start
+            if(isset($this->request->post['dpd_parcel'])){
+                        $order_data['dpd_parcel'] = $this->request->post['dpd_parcel'];
+                    }
+                //DPD IC mod end]]>
+            </add>
+        </operation>
+
+    </file>
+
+    <file path="catalog/model/journal3/order.php">
+        <operation>
+            <search>
+                <![CDATA[
+                    	$order_data['comment'] = $this->session->data['comment'];
+                ]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[
+                    $order_data['shipping_timeframe'] = '';
+
+		if(isset($this->session->data['shipping_method']['code'])){
+			$shipping = explode('.', $this->session->data['shipping_method']['code']);
+			if (isset($shipping[0]) && $shipping[0] == 'dpd_courier') {
+				if(isset($this->session->data['shipping_timeframe'])){
+					$order_data['shipping_timeframe'] = $this->session->data['shipping_timeframe'];
+				}
+			}
+		}
+
+       $order_data['shipping_parcel_id'] = '0';
+
+		if(isset($this->session->data['shipping_method']['code'])){
+			$shipping = explode('.', $this->session->data['shipping_method']['code']);
+			if (isset($shipping[0]) && $shipping[0] == 'dpd_parcel') {
+				if(isset($this->session->data['shipping_parcel_id'])){
+					$order_data['shipping_parcel_id'] = $this->session->data['shipping_parcel_id'];
+				}
+			}
+		}
+
+        // Remove markup from method name
+        if($order_data['shipping_parcel_id']) {
+            $this->load->model('extension/shipping/dpd_parcel');
+            $order_data['shipping_method'] = $this->model_extension_shipping_dpd_parcel->getMethodTitleText();
+        }
+
+                ]]>
+            </add>
+        </operation>
+
+        <operation>
+            <search>
+                <![CDATA[shipping_method = '" . $this->db->escape($data['shipping_method']) . "',]]>
+            </search>
+
+            <add position="replace">
+                <![CDATA[shipping_method = '" . $this->db->escape(strip_tags($data['shipping_method'])) . "',]]>
+            </add>
+        </operation>
+
+
+
+        <operation>
+            <search>
+                <![CDATA[
+                $order_id = $this->db->getLastId();
+                ]]>
+            </search>
+
+            <add position="after">
+                <![CDATA[
+                if (isset($data['shipping_timeframe'])) {
+			$this->db->query("UPDATE " . DB_PREFIX . "order SET shipping_timeframe = '" . $this->db->escape($data['shipping_timeframe']) . "' WHERE order_id = '" . (int)$order_id . "'");
+        }
+
+        if(isset($data['shipping_parcel_id'])) {
+            $this->db->query("UPDATE `" . DB_PREFIX . "order` SET shipping_parcel_id = '" . $this->db->escape($data['shipping_parcel_id']) . "' WHERE order_id = '" . (int)$order_id . "'");
+        }
+                ]]>
+            </add>
+        </operation>
+
+
+        <operation>
+            <search>
+                <![CDATA[
+                    $this->db->query("DELETE FROM " . DB_PREFIX . "order_product WHERE order_id = '" . (int)$order_id . "'");
+                ]]>
+            </search>
+
+            <add position="before">
+                <![CDATA[
+                if (isset($data['shipping_timeframe'])) {
+                    $this->db->query("UPDATE " . DB_PREFIX . "order SET shipping_timeframe = '" . $this->db->escape($data['shipping_timeframe']) . "' WHERE order_id = '" . (int)$order_id . "'");
+                }
+
+                if(isset($data['shipping_parcel_id'])) {
+                    $this->db->query("UPDATE `" . DB_PREFIX . "order` SET shipping_parcel_id = '" . $this->db->escape($data['shipping_parcel_id']) . "' WHERE order_id = '" . (int)$order_id . "'");
+                }
+                ]]>
+            </add>
+        </operation>
+
+    </file>
+
+    <!-- checkout number validation-->
+    <file path="catalog/view/theme/default/template/checkout/register.twig">
+        <operation>
+            <search index="3"><![CDATA[</script>]]></search>
+            <add position="after"><![CDATA[{#DPD IC mod start#}
+            <script>
+    let inp = document.querySelector('#input-payment-telephone');
+
+    // Проверяем фокус
+    inp.addEventListener('focus', _ => {
+        // Если там ничего нет или есть, но левое
+        if(!/^\+\d*$/.test(inp.value))
+            // То вставляем знак плюса как значение
+            inp.value = '+';
+    });
+
+    inp.addEventListener('keypress', e => {
+        // Отменяем ввод не цифр
+        if(!/\d/.test(e.key))
+            e.preventDefault();
+    });
+    document.getElementById('input-payment-telephone').addEventListener('input', function(){
+        this.value = "+" + this.value.slice(1);
+    });
+
+</script>
+<style>
+    input:focus{outline: none;}
+</style>
+{#DPD IC mod end#}]]></add>
+        </operation>
+    </file>
+    <file path="catalog/view/theme/default/template/checkout/guest.twig">
+        <operation>
+            <search index="3"><![CDATA[</script>]]></search>
+            <add position="after"><![CDATA[{#DPD IC mod start#}
+            <script>
+    let inp = document.querySelector('#input-payment-telephone');
+
+    // Проверяем фокус
+    inp.addEventListener('focus', _ => {
+        // Если там ничего нет или есть, но левое
+        if(!/^\+\d*$/.test(inp.value))
+            // То вставляем знак плюса как значение
+            inp.value = '+';
+    });
+
+    inp.addEventListener('keypress', e => {
+        // Отменяем ввод не цифр
+        if(!/\d/.test(e.key))
+            e.preventDefault();
+    });
+    document.getElementById('input-payment-telephone').addEventListener('input', function(){
+        this.value = "+" + this.value.slice(1);
+    });
+
+</script>
+<style>
+    input:focus{outline: none;}
+</style>
+{#DPD IC mod end#}]]></add>
+        </operation>
+    </file>
+    <!-- J3 checkout number validation-->
+    <file path="catalog/controller/journal3/checkout.php">
+        <operation>
+            <search><![CDATA[if ($this->journal3->settings->get('quickCheckoutAccountTelephoneField') === 'required') {]]></search>
+            <add position="replace" offset="4"><![CDATA[//DPD IC mod start
+            if(utf8_strlen(Arr::get($this->request->post, 'order_data.telephone'))){
+            if(preg_match("/^\+?\d+$/", Arr::get($this->request->post, 'order_data.telephone'))) {
+                if ((utf8_strlen(Arr::get($this->request->post, 'order_data.telephone')) < 3) || (utf8_strlen(Arr::get($this->request->post, 'order_data.telephone')) > 32)) {
+                    $error['telephone'] = $this->language->get('error_telephone');
+                }
+            }else{
+                $error['telephone'] = $this->language->get('error_valid_telephone');
+            }
+        }else{$error['telephone'] = $this->language->get('error_telephone');}
+//DPD IC mod end]]></add>
+        </operation>
+    </file>
+    <file path="catalog/language/en-gb/checkout/checkout.php">
+        <operation>
+            <search><![CDATA[$_['error_telephone']                = 'Telephone must be between 3 and 32 characters!';]]></search>
+            <add position="after" ><![CDATA[//DPD IC mod start
+            $_['error_valid_telephone']                = 'Telephone does not appear to be valid!';
+//DPD IC mod end]]></add>
+        </operation>
+    </file>
+
+    <!-- Postcode required -->
+    <file path="catalog/controller/checkout/guest.php">
+        <operation>
+            <search><![CDATA[if ($country_info && $country_info['postcode_required'] && (utf8_strlen(trim($this->request->post['postcode'])) < 2 || utf8_strlen(trim($this->request->post['postcode'])) > 10)) {]]></search>
+            <add position="replace" offset="2"><![CDATA[/*DPD IC mod start*/
+            if ((utf8_strlen(trim($this->request->post['postcode'])) < 2 || utf8_strlen(trim($this->request->post['postcode'])) > 10)) {
+				$json['error']['postcode'] = $this->language->get('error_postcode');
+			}
+            /*DPD IC mod end*/]]></add>
+        </operation>
+    </file>
+    <file path="catalog/controller/checkout/register.php">
+        <operation>
+            <search><![CDATA[if ($country_info && $country_info['postcode_required'] && (utf8_strlen(trim($this->request->post['postcode'])) < 2 || utf8_strlen(trim($this->request->post['postcode'])) > 10)) {]]></search>
+            <add position="replace" offset="2"><![CDATA[/*DPD IC mod start*/
+            if ((utf8_strlen(trim($this->request->post['postcode'])) < 2 || utf8_strlen(trim($this->request->post['postcode'])) > 10)) {
+				$json['error']['postcode'] = $this->language->get('error_postcode');
+			}/*DPD IC mod end*/]]></add>
+        </operation>
+    </file>
+    <file path="catalog/controller/checkout/payment_address.php">
+        <operation>
+            <search><![CDATA[if ($country_info && $country_info['postcode_required'] && (utf8_strlen(trim($this->request->post['postcode'])) < 2 || utf8_strlen(trim($this->request->post['postcode'])) > 10)) {]]></search>
+            <add position="replace" offset="2"><![CDATA[/*DPD IC mod start*/
+            if ((utf8_strlen(trim($this->request->post['postcode'])) < 2 || utf8_strlen(trim($this->request->post['postcode'])) > 10)) {
+				$json['error']['postcode'] = $this->language->get('error_postcode');
+			}
+			/*DPD IC mod end*/]]></add>
+        </operation>
+    </file>
+    <file path="catalog/controller/checkout/shipping_address.php">
+        <operation>
+            <search><![CDATA[if ($country_info && $country_info['postcode_required'] && (utf8_strlen(trim($this->request->post['postcode'])) < 2 || utf8_strlen(trim($this->request->post['postcode'])) > 10)) {]]></search>
+            <add position="replace" offset="2"><![CDATA[/*DPD IC mod start*/
+            if ((utf8_strlen(trim($this->request->post['postcode'])) < 2 || utf8_strlen(trim($this->request->post['postcode'])) > 10)) {
+				$json['error']['postcode'] = $this->language->get('error_postcode');
+			}
+            /*DPD IC mod end*/]]></add>
+        </operation>
+    </file>
+    <file path="catalog/controller/journal3/checkout.php">
+        <operation>
+            <search><![CDATA[if ($this->journal3->settings->get('quickCheckoutAddressPostcodeField') === 'required') {]]></search>
+            <add position="replace" offset="4"><![CDATA[/*DPD IC mod start*/
+            if ($this->journal3->settings->get('quickCheckoutAddressPostcodeField') === 'required') {
+			if ( (utf8_strlen(trim(Arr::get($this->session->data, $type . '_address.postcode'))) < 2 || utf8_strlen(trim(Arr::get($this->session->data, $type . '_address.postcode'))) > 10)) {
+				$error[$type . '_postcode'] = $this->language->get('error_postcode');
+			}
+		}
+            /*DPD IC mod end*/]]></add>
+        </operation>
+    </file>
+
+    <!-- Logo dpd checkout -->
+    <file path="catalog/view/theme/journal3/template/journal3/checkout/shipping_method.twig">
+        <operation>
+            <search><![CDATA[<p v-html="shipping_method.title"></p>]]></search>
+            <add position="replace"><![CDATA[{#DPD IC mod start#}
+            <p style="display: block" v-html="shipping_method.title"></p>
+            {#DPD IC mod end#}]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[<span v-if="!quote.gmap_api">]]></search>
+            <add position="replace"><![CDATA[{#DPD IC mod start#}
+            <span v-if="!quote.gmap_api" v-bind:style=" quote.code != 'pickup.pickup' ? 'padding-left: 30px;' : '' ">
+            {#DPD IC mod end#}]]></add>
+        </operation>
+    </file>
+    <file path="catalog/controller/extension/onepagecheckout/shipping_method.php">
+        <operation>
+            <search><![CDATA[if (!$json) {]]></search>
+            <add position="before"><![CDATA[if ($shipping[0] == 'dpd_parcel'){
+                unset($json);
+            }]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[$json['success']= true;]]></search>
+            <add position="before"><![CDATA[if ($shipping[0] == 'dpd_parcel'){
+                $google_map_api = $this->config->get('dpd_setting_google_map_api_key');
+                $this->load->model('extension/shipping/dpd_parcel');
+                if ($google_map_api == '') {
+                    $terminal_id = explode('|', $this->request->post['shipping_method']);
+                    $dpd_shipping_method = explode('.', $terminal_id[0]);
+                    if ($dpd_shipping_method[0] == 'dpd_parcel') {
+                        if (isset($terminal_id[0]) && isset($terminal_id[1])) {
+                            if ($terminal_id[1] == '0') {
+                                $data['error_warning'] = $this->model_extension_shipping_dpd_parcel->getNoParcelWarningText();
+                            } else {
+                                $this->session->data['shipping_parcel_id'] = $terminal_id[1];
+                            }
+                        }
+                    }
+                }
+                $new_shipping = explode('|', $shipping[1]);
+                $this->session->data['shipping_method']['code'] = $shipping[0];
+                $this->session->data['shipping_method']['title'] = $new_shipping[2];
+                $this->session->data['shipping_method']['cost'] = $this->session->data['shipping_methods'][$shipping[0]]['quote'][$new_shipping[0]]['cost'];
+                $this->session->data['shipping_method']['tax_class_id'] = $this->session->data['shipping_methods'][$shipping[0]]['quote'][$new_shipping[0]]['tax_class_id'];
+                $this->session->data['shipping_method']['text'] = $this->session->data['shipping_methods'][$shipping[0]]['quote'][$new_shipping[0]]['text'];
+
+                $this->session->data['temp_shipping_method']['code'] = $shipping[0];
+                $this->session->data['temp_shipping_method']['title'] = $new_shipping[2];
+                $this->session->data['temp_shipping_method']['cost'] = $this->session->data['shipping_methods'][$shipping[0]]['quote'][$new_shipping[0]]['cost'];
+                $this->session->data['temp_shipping_method']['tax_class_id'] = $this->session->data['shipping_methods'][$shipping[0]]['quote'][$new_shipping[0]]['tax_class_id'];
+                $this->session->data['temp_shipping_method']['text'] = $this->session->data['shipping_methods'][$shipping[0]]['quote'][$new_shipping[0]]['text'];
+
+            }]]></add>
+        </operation>
+    </file>
+    <file path="catalog/controller/extension/onepagecheckout/validate.php">
+        <operation>
+            <search><![CDATA[if(!isset($this->request->post['payment_method'])){]]></search>
+            <add position="before"><![CDATA[if ($shipping[0] == 'dpd_parcel'){
+                        unset($json);
+                    }]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[if (!$json) {]]></search>
+            <add position="before"><![CDATA[if ($shipping[0] == 'dpd_parcel'){
+                                unset($json['error']['shipping_method']['warning']);
+                            }]]></add>
+        </operation>
+    </file>
+
+
+</modification>

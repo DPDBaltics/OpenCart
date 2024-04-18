@@ -1,0 +1,130 @@
+<!-- Show if its not modal window -->
+{% if modal != 1 %}
+{{ header }}{{ column_left }}
+  <div id="content">
+    <div class="page-header">
+      <div class="container-fluid">
+        <h1>{{ button_request_dpd }}</h1>
+        <div class="pull-right">
+          <button id="dpd_submit" class="btn btn-info">{{ button_request_dpd }}</button>
+      </div>
+    </div>
+    <div class="container-fluid">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title"><i class="fa fa-pencil"></i> {{ button_request_dpd }}</h3>
+        </div>
+        <div class="panel-body">
+{% endif %}
+
+        <form id="dpd-form" class="form-horizontal">
+          <div class="form-group">
+            <label for="warehouse" class="col-sm-4 control-label">{{ entry_select_warehouse }}</label>
+            <div class="col-sm-8">
+              <select name="warehouse_id" id="warehouse" class="form-control">
+                {% for key,warehouse in warehouses %}
+                  <option value="{{ key }}">{{ warehouse['name'] }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="nonStandard" class="col-sm-4 control-label">{{ entry_comment_for_courier }}</label>
+            <div class="col-sm-8">
+              <textarea name="nonStandard" id="nonStandard" cols="40" rows="2" maxlength="100" title="{{ entry_comment_for_courier }}" class="form-control"></textarea>
+              <input name="selected" id="dpd_order_ids" value="0" type="hidden">
+            </div>
+          </div>
+
+          {% if status == 1 %}
+            <div class="form-group">
+              <label for="nonStandard" class="col-sm-4 control-label">{{ entry_pickuptime }}</label>
+              <div class="col-sm-8">
+                <div class="input-group">
+                  <span class="input-group-addon" id="basic-addon1">{{ text_from }}</span>
+                  <input name="pickup_from" type="text" class="form-control dpd-time" value="{{ pickup_from }}">
+                  
+                  <span class="input-group-addon" id="basic-addon1">{{ text_until }}</span>
+                  <input name="pickup_until" type="text" class="form-control dpd-time" value="{{ pickup_until }}">
+                </div>
+              </div>
+            </div>
+          {% endif %}
+
+          <div class="form-group">
+            <label for="parcelsCount" class="col-sm-4 control-label">{{ entry_parcels_no }}</label>
+            <div class="col-sm-8">
+              <input name="parcelsCount" id="parcelsCount" value="1" class="form-control" type="text">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="palletsCount" class="col-sm-4 control-label">{{ entry_pallets_no }}</label>
+            <div class="col-sm-8">
+              <input name="palletsCount" id="palletsCount" value="0" class="form-control" type="text">
+            </div>
+          </div>  
+
+          <input type="hidden" id="warning" name="warning" value="" />
+        </form>
+
+<!-- Show if its not modal window -->
+{% if modal != 1 %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Show if its modal window -->
+{% if modal == 1 %}
+  <button id="dpd_submit" class="btn btn-block btn-info">{{ button_request_dpd_courier }}</button>
+{% endif %}
+
+<script type="text/javascript">
+  {% set replace_value_var= '&amp;' %}
+  {% set replace_with_value_var = '&' %}
+
+  $("#dpd_submit").on("click", function() {
+    $.ajax({
+      url: '{{ action|replace({ (replace_value_var): replace_with_value_var }) }}',
+      type: 'post',
+      data: $('#dpd-form').serialize(),
+      dataType: 'json',
+      beforeSend: function() {
+        $('#dpd_submit').button('loading');
+      },
+      complete: function() {
+        $('#dpd_submit').button('reset');
+      },
+      success: function(json) {
+        $('.alert').remove();
+
+        if (json['error']) {
+          $('#dpd-form').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+        }
+
+        if (json['success']) {
+          $('#dpd-form').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+        }
+      },
+      error: function(xhr, ajaxOptions, thrownError) {
+        //alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+      }
+    });
+  });
+
+  $('.dpd-time').datetimepicker({
+    format: 'HH:mm',
+    pickDate: false,
+    hoursDisabled: '0,1,2,3,4,5,6,7,8,9,18,19,20,21,22,23'
+  });
+</script>
+
+<link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet">
+
+<!-- Show if its not modal window -->
+{% if modal != 1 %}
+  {{ footer }}
+{% endif %}
