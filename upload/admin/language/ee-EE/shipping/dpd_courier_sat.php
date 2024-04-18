@@ -1,0 +1,2 @@
+<?php
+$_['heading_title']    = '<img src="view/image/dpd_logo.png" title="Laupäeva teenus DPD kulleriga" alt="Laupäeva teenus DPD kulleriga" style="height: 22px; margin-right: 15px;" /> Laupäeva teenus DPD kulleriga';
