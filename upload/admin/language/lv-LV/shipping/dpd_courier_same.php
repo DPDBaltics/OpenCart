@@ -1,0 +1,2 @@
+<?php
+$_['heading_title'] = '<img src="view/image/dpd_logo.png" title="DPD Same Day (kurjerpiegāde)" alt="DPD Same Day (kurjerpiegāde)" style="height: 22px; margin-right: 15px;" /> DPD Same day (kurjerpiegāde)';

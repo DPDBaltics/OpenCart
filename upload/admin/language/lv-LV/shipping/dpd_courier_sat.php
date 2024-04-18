@@ -1,0 +1,2 @@
+<?php
+$_['heading_title']    = '<img src="view/image/dpd_logo.png" title="DPD piegāde ar kurjeru sestdienā" alt="DPD piegāde ar kurjeru sestdienā" style="height: 22px; margin-right: 15px;" /> DPD piegāde ar kurjeru sestdienā';
