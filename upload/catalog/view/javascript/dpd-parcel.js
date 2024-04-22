@@ -224,7 +224,7 @@ var dpd_parcel_map = {};
 				marker = new google.maps.Marker({
 		          position: {lat: parseFloat(item.latitude), lng: parseFloat(item.longitude)},
 		          map: dpd_parcel_map.map,
-		          icon: 'admin/view/image/point.png'
+		          icon: 'catalog/view/theme/default/image/point.png'
 		        });
 
 				// Store terminal properties in marker
