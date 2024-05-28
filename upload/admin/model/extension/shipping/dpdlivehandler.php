@@ -368,13 +368,13 @@ class ModelExtensionShippingDpdLivehandler extends Model {
                 strpos($shipping_code[0], self::PARCELCODE) !== FALSE) {
 
                 if (!$this->getOrderBarcode($order_id)) {
-                    $product_weight = 0.1;
+                    $product_weight = 0;
                     $total_order_quantity = 0;
                     $total_different_products = 0;
 
                     foreach ($products as $product) {
                         $product_data = $this->model_catalog_product->getProduct($product['product_id']);
-                        $product_weight += $product_data['weight'];
+                        $product_weight += $product_data['weight'] * $product['quantity'];
                         $total_order_quantity += $product['quantity'];
                         $total_different_products += 1;
                     }
@@ -416,6 +416,7 @@ class ModelExtensionShippingDpdLivehandler extends Model {
                         'phone' => $phone,
                         'idm_sms_number' => $phone,
                         'email' => $email,
+                        'weight' => $product_weight,
                         'order_number' => $order_id . '#' . $this->config->get('config_invoice_prefix'),
                         'idm_sms_number' => $phone
                     );
