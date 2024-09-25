@@ -62,7 +62,7 @@ $( window ).load(function() {
 	$("#content").on('change', 'select[name="dpd_parcel"]', function() {
 		triggerDPDDropdown($(this));
 
-		$('.section-shipping input[name="shipping_method"]').trigger('click');
+		$($('[id*=dpd_parcel]')).trigger('click');
 	});
 
 	// Timeframe

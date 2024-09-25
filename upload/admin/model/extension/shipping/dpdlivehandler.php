@@ -1300,7 +1300,18 @@ class ModelExtensionShippingDpdLivehandler extends Model {
         );
 
         try {
-            $postRequestResult = file_get_contents($url, false, $context);
+
+            $ch = curl_init();
+
+            curl_setopt($ch, CURLOPT_URL, $url);
+
+            curl_setopt ($ch, CURLOPT_RETURNTRANSFER, 1);
+
+            $content = curl_exec ($ch);
+
+            curl_close ($ch);
+
+            $postRequestResult = $content;
         }
 
         catch (Exception $e) {
