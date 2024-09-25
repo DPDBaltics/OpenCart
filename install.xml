@@ -1527,21 +1527,18 @@ $data['dpd_gmap_api_key'] = $this->config->get('dpd_setting_google_map_api_key')
 
     <file path="catalog/model/journal3/checkout.php">
         <operation>
-            <search>
-                <![CDATA[
-                    	$shipping_method = Arr::get($this->session->data, 'shipping_methods.' . $shipping[0] . '.quote.' . $shipping[1]);
-                ]]>
+            <search index="2">
+                <![CDATA[return array(]]>
             </search>
 
             <add position="before">
                 <![CDATA[
-                    $new_shipping[0] = $shipping[1];
+                   unset($this->session->data['shipping_method_title']);
 
-                    unset($this->session->data['shipping_method_title']);
-
-                    if (isset($shipping[0]) && $shipping[0] == 'dpd_parcel') {
-                        $this->session->data['shipping_method_title'] = 'Shipping by DPD Pickup points';
-                    }
+        if (isset($shipping[0]) && $shipping[0] == 'dpd_parcel') {
+            $this->dpdCheck($code);
+            $this->session->data['shipping_method']['title'] = $this->session->data['shipping_method_title'];
+        }
                 ]]>
             </add>
         </operation>
@@ -1571,7 +1568,7 @@ $data['dpd_gmap_api_key'] = $this->config->get('dpd_setting_google_map_api_key')
 
 				$row = $this->model_extension_shipping_dpd_parcel->getTerminalByCode($this->session->data['shipping_parcel_id']);
 				if($row){
-					$this->session->data['shipping_method_title'] = $row['company'] . ', ' . $row['street'];
+					$this->session->data['shipping_method_title'] = $row;
 				}
 			}
 		}
@@ -1864,7 +1861,9 @@ $data['dpd_gmap_api_key'] = $this->config->get('dpd_setting_google_map_api_key')
         <operation>
             <search><![CDATA[if (!$json) {]]></search>
             <add position="before"><![CDATA[if ($shipping[0] == 'dpd_parcel'){
-                unset($json);
+                $json = array();
+                $new_shipping = explode('|', $shipping[1]);
+                $shipping[1] = $new_shipping[0];
             }]]></add>
         </operation>
         <operation>
@@ -1885,7 +1884,7 @@ $data['dpd_gmap_api_key'] = $this->config->get('dpd_setting_google_map_api_key')
                         }
                     }
                 }
-                $new_shipping = explode('|', $shipping[1]);
+
                 $this->session->data['shipping_method']['code'] = $shipping[0];
                 $this->session->data['shipping_method']['title'] = $new_shipping[2];
                 $this->session->data['shipping_method']['cost'] = $this->session->data['shipping_methods'][$shipping[0]]['quote'][$new_shipping[0]]['cost'];

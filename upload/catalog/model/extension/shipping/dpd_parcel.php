@@ -64,6 +64,7 @@ class ModelExtensionShippingDpdParcel extends Model {
 		                        var value = $(this).val();
 		                        var text = $(this).find('option:selected').text();
 		                        el.prop('checked', true);
+		                        //for one page el.trigger('click');el.prop('checked', false);
 		                        el.val(orig_value + '|' + value + '|' + text.replace('|', ','));
 		                        el.prop('checked', 'checked');
 		                    })
@@ -240,7 +241,14 @@ class ModelExtensionShippingDpdParcel extends Model {
 
         return $terminals;
     }
-
+    public function getTerminalByCode($code) {
+        $terminals = $this->db->query("SELECT * FROM " . DB_PREFIX . "terminals_list WHERE code = '". $code ."'");
+        foreach($terminals as $terminal) {
+            if($terminal['code'] == $code) {
+                return $terminal['company'] . ', ' . $terminal['street'];
+            }
+        }
+    }
     private function getTerminalName($terminals, $code) {
         foreach($terminals as $terminal) {
             if($terminal['code'] == $code) {
