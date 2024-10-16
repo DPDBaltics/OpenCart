@@ -21,14 +21,6 @@
         </operation>
     </file>
 
-    <file path="admin/model/extension/shipping/dpdlivehandler.php">
-        <operation>
-            <search><![CDATA['order_number' => $order_id . '#' . $this->config->get('config_invoice_prefix'),]]></search>
-            <add position="after"><![CDATA[// DPD IC mod start
-                'order_number3' => 'OC' . VERSION . ';' . $this->config->get('dpd_setting_module_version'),
-                // DPD IC mod end]]></add>
-        </operation>
-    </file>
 
 
     <file path="admin/language/en-gb/extension/module/dpd_settings.php">
