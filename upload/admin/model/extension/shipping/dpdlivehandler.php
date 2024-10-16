@@ -418,6 +418,9 @@ class ModelExtensionShippingDpdLivehandler extends Model {
                         'email' => $email,
                         'weight' => $product_weight,
                         'order_number' => $order_id . '#' . $this->config->get('config_invoice_prefix'),
+                        // DPD IC mod start
+                        'order_number3' => 'OC' . VERSION . ';' . $this->config->get('dpd_setting_module_version'),
+                        // DPD IC mod end
                         'idm_sms_number' => $phone
                     );
 
@@ -630,7 +633,7 @@ class ModelExtensionShippingDpdLivehandler extends Model {
 
             $result = $this->getRequest($params);
 
-            if ($result['status'] == 'ok') {
+            if (isset($result['status']) == 'ok') {
                 if (count($result['parcelshops']) > 0) {
                     foreach ($result['parcelshops'] as $parcel) {
                         $parcel_id = substr($parcel['parcelshop_id'], 0, $lenght);
@@ -660,7 +663,6 @@ class ModelExtensionShippingDpdLivehandler extends Model {
                 }
             } else {
                 $result['status'] = 'err';
-                $result['errlog'] = $result['errlog'];
             }
         }
 
@@ -1244,10 +1246,10 @@ class ModelExtensionShippingDpdLivehandler extends Model {
 
                 break;
             case 'lv':
-                $api_url = 'https://integration.dpd.lv:8443/';
+                $api_url = 'https://integration.dpd.lv/';
                 break;
             case 'ee':
-                $api_url = 'https://integration.dpd.ee:8443/';
+                $api_url = 'https://integration.dpd.ee/';
                 break;
             default:
                 $api_url = 'https://integracijos.dpd.lt/';
@@ -1295,23 +1297,13 @@ class ModelExtensionShippingDpdLivehandler extends Model {
         set_error_handler(
             function($errno, $errstr, $errfile, $errline)
             {
-                echo $errstr . " in file " . $errfile . " on line " . $errline . ". Debug backtrace: <pre>" . print_r(debug_backtrace(), true) . "</pre>";
+                /*echo $errstr . " in file " . $errfile . " on line " . $errline . ". Debug backtrace: <pre>" . print_r(debug_backtrace(), true) . "</pre>";*/
             }
         );
 
         try {
 
-            $ch = curl_init();
-
-            curl_setopt($ch, CURLOPT_URL, $url);
-
-            curl_setopt ($ch, CURLOPT_RETURNTRANSFER, 1);
-
-            $content = curl_exec ($ch);
-
-            curl_close ($ch);
-
-            $postRequestResult = $content;
+            $postRequestResult = file_get_contents($url, false, $context);
         }
 
         catch (Exception $e) {
